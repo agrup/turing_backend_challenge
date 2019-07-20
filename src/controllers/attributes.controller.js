@@ -10,6 +10,21 @@
  * NB: Check the BACKEND CHALLENGE TEMPLATE DOCUMENTATION in the readme of this repository to see our recommended
  *  endpoints, request body/param, and response object for each of these method
  */
+ import {
+  Attribute,
+  AttributeValue,
+  Product,
+  ProductAttribute,
+ } from '../database/models';
+
+ //const { Op } = Sequelize;
+
+
+/**
+ *
+ *
+ * @class AttributeController
+ */
 class AttributeController {
   /**
    * This method get all attributes
@@ -19,7 +34,12 @@ class AttributeController {
    */
   static async getAllAttributes(req, res, next) {
     // write code to get all attributes from the database here
-    return res.status(200).json({ message: 'this works' });
+    try{
+      const attribute = await Attribute.findAll();
+      return res.status(200).json(attribute);
+    } catch (error) {
+      return next(error);
+    }
   }
 
   /**
@@ -30,7 +50,14 @@ class AttributeController {
    */
   static async getSingleAttribute(req, res, next) {
     // Write code to get a single attribute using the attribute id provided in the request param
-    return res.status(200).json({ message: 'this works' });
+    const {attribute_id} = req.params;
+    try{
+      const attributes = await Attribute.findByPk(attribute_id);
+      return res.status(200).json(attributes);
+    }catch(error) {
+      return next(error);
+    }
+    //return res.status(200).json({ message: 'this works' });
   }
 
   /**
@@ -42,7 +69,28 @@ class AttributeController {
   static async getAttributeValues(req, res, next) {
     // Write code to get all attribute values for an attribute using the attribute id provided in the request param
     // This function takes the param: attribute_id
-    return res.status(200).json({ message: 'this works' });
+    const {attribute_id} = req.params;
+    try{
+      const attributes = await AttributeValue.findAll({
+        attributes: { exclude: ['attribute_id'] },
+        include:[
+          {
+
+            model:Attribute,
+
+            as: 'attribute_type',
+            where:{
+              attribute_id
+            },
+            attributes:[]
+          }
+        ]
+      });
+      return res.status(200).json(attributes);
+    }catch(error) {
+      return next(error);
+    }    
+    //return res.status(200).json({ message: 'this works' });
   }
 
   /**
@@ -53,7 +101,43 @@ class AttributeController {
    */
   static async getProductAttributes(req, res, next) {
     // Write code to get all attribute values for a product using the product id provided in the request param
-    return res.status(200).json({ message: 'this works' });
+    const {product_id} = req.params;
+    try{
+      const attributeValue = await AttributeValue.findAll({
+        
+        raw:true,
+        include:[
+          {
+            model:Product,
+            where:
+            {
+              product_id
+            },
+
+            attributes: { exclude: ['attribute_id'] },
+          }
+        ],
+        include:[
+          {
+            model:Attribute,
+            as: 'attribute_type',
+            raw:true,
+            nested:true,
+            //attributes:[['name','attribute_name']],
+            
+            attributes:[]
+          }
+        ],
+        //attributes: { exclude: ['attribute_id'],include:['attribute_type.name']},
+        attributes:['attribute_value_id','attribute_type.name',['value','attribute_value']],
+        //attributes:[]
+      })
+      ;
+
+    return res.status(200).json(attributeValue);
+    }catch(error) {
+      return next(error);
+    } 
   }
 }
 
